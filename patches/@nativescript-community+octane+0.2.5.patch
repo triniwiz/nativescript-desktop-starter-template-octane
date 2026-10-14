@@ -1,0 +1,44 @@
+diff --git a/node_modules/@nativescript-community/octane/dist/driver.js b/node_modules/@nativescript-community/octane/dist/driver.js
+index 8bc563a..9d4fd56 100644
+--- a/node_modules/@nativescript-community/octane/dist/driver.js
++++ b/node_modules/@nativescript-community/octane/dist/driver.js
+@@ -157,12 +157,20 @@ function applyStyle(view, value) {
+     if (typeof value === 'object')
+         Object.assign(view.style, value);
+ }
++/**
++ * MasonKit views (`<div>`, `<span>`, ...) extend core's CustomLayoutView, not
++ * LayoutBase or TextBase, but take children through `insertChild` and lay out
++ * text set through `text`. MasonKit registers `textContent` on all of them.
++ */
++function isMasonView(view) {
++    return view != null && 'textContent' in view && typeof view.insertChild === 'function';
++}
+ /** Recompute a text host's `text` from its `#text` children. */
+ function syncText(parent) {
+     if (parent === null || isPortalTarget(parent))
+         return;
+     const view = parent.view;
+-    if (!(view instanceof TextBase))
++    if (!(view instanceof TextBase) && !isMasonView(view))
+         return;
+     let text = '';
+     let found = false;
+@@ -186,7 +194,7 @@ function addViewChild(parentView, view, index) {
+         parentView[slot] = view;
+         return;
+     }
+-    if (parentView instanceof LayoutBase) {
++    if (parentView instanceof LayoutBase || isMasonView(parentView)) {
+         parentView.insertChild(view, Math.min(index, parentView.getChildrenCount()));
+         return;
+     }
+@@ -227,7 +235,7 @@ function removeViewChild(parentView, view) {
+         parentView[slot] = null;
+         return;
+     }
+-    if (parentView instanceof LayoutBase) {
++    if (parentView instanceof LayoutBase || isMasonView(parentView)) {
+         // `removeChild` throws for a view that is not attached — and `insert`
+         // detaches unconditionally, including nodes that were never attached.
+         if (view.parent === parentView)
